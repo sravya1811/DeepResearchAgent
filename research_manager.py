@@ -1,4 +1,4 @@
-from agents import Runner, trace, gen_trace_id
+from agents import Runner, trace, gen_trace_id,InputGuardrailTripwireTriggered
 from search_agent import search_agent
 from planner_agent import planner_agent, WebSearchItem, WebSearchPlan
 from writer_agent import writer_agent, ReportData
@@ -12,7 +12,13 @@ class ResearchManager:
         trace_id = gen_trace_id()
         with trace("Research trace", trace_id=trace_id):
             yield f"Starting research. Trace: https://platform.openai.com/traces/trace?trace_id={trace_id}"
-            search_plan = await self.plan_searches(query)
+            try:
+                search_plan = await self.plan_searches(query)
+            except InputGuardrailTripwireTriggered as e:
+                reason = e.guardrail_result.output.output_info.reason
+                yield f"Research query denied: {reason}"
+                return
+
             yield f"Searches planned, starting {len(search_plan.searches)} searches..."     
             search_results = await self.perform_searches(search_plan)
             yield "Searches complete, writing report..."
