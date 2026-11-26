@@ -2,8 +2,11 @@ from agents import Runner, trace, gen_trace_id,InputGuardrailTripwireTriggered
 from search_agent import search_agent
 from planner_agent import planner_agent, WebSearchItem, WebSearchPlan
 from writer_agent import writer_agent, ReportData
-from email_agent import email_agent
+from email_agent import email_agent, USE_EMAIL
 import asyncio
+import logging
+
+logger = logging.getLogger(__name__)
 
 class ResearchManager:
 
@@ -21,11 +24,18 @@ class ResearchManager:
 
             yield f"Searches planned, starting {len(search_plan.searches)} searches..."     
             search_results = await self.perform_searches(search_plan)
-            yield "Searches complete, writing report..."
+            failed = len(search_plan.searches) - len(search_results)
+            if not search_results:
+                yield "All searches failed. Please check your API keys / network and try again."
+                return
+            yield f"Searches complete ({failed} failed), writing report..."
             report = await self.write_report(query, search_results)
-            yield "Report written, sending email..."
-            await self.send_email(report)
-            yield "Email sent, research complete"
+            if USE_EMAIL:
+                yield "Report written, sending email..."
+                await self.send_email(report)
+                yield "Email sent, research complete"
+            else:
+                yield "Report written. Email was skipped and cannot be sent because the email option is disabled."
             yield report.markdown_report
 
     async def plan_searches(self, query: str) -> WebSearchPlan:
@@ -36,13 +46,18 @@ class ResearchManager:
     async def perform_searches(self, search_plan: WebSearchPlan) -> list[str]:
         """ Perform the searches to perform for the query """
         tasks = [self.search(item) for item in search_plan.searches]
-        return await asyncio.gather(*tasks)
+        results = await asyncio.gather(*tasks)
+        return [r for r in results if r is not None]
 
     async def search(self, item: WebSearchItem) -> str | None:
         """ Perform a search for the query """
         input_message = f"Search term: {item.query}\nReason for searching: {item.reason}"
-        result = await Runner.run(search_agent, input_message)
-        return result.final_output
+        try:
+            result = await Runner.run(search_agent, input_message)
+            return result.final_output
+        except Exception as e:
+            logger.warning("Search failed for %r: %s", item.query, e)
+            return None
 
     async def write_report(self, query: str, search_results: list[str]) -> ReportData:
         """ Write the report for the query """

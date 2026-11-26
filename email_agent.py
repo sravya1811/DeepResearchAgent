@@ -19,10 +19,9 @@ def send_email_tool(subject: str, text_body: str, html_body: str) -> str:
         text_body: The body of the email as plain text
         html_body: The HTML body of the email
     """
-    if USE_EMAIL:
-        send_email(subject, text_body, html_body)
-    else:
-        push(f"Subject: {subject}\n\n{text_body}")
+    if not USE_EMAIL:
+        return "Email was skipped and cannot be sent because the email option is disabled (USE_EMAIL=false)."
+    send_email(subject, text_body, html_body)
     return "Email sent successfully"
 
 

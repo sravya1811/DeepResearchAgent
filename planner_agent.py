@@ -22,4 +22,10 @@ class WebSearchItem(BaseModel):
 class WebSearchPlan(BaseModel):
     searches: list[WebSearchItem] = Field(description="A list of web searches to perform to best answer the query.")
     
-planner_agent = Agent(name="Planner Agent", instructions=INSTRUCTIONS, model=MODEL_NAME, output_type=WebSearchPlan,input_guardrail=[research_query_guardrail])
+planner_agent = Agent(
+    name="Planner Agent",
+    instructions=INSTRUCTIONS,
+    model=MODEL_NAME,
+    output_type=WebSearchPlan,
+    input_guardrails=[research_query_guardrail],
+)
