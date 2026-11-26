@@ -1,5 +1,4 @@
 from dotenv import load_dotenv
-import requests
 import os
 import smtplib
 from email.message import EmailMessage
