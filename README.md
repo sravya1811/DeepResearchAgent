@@ -34,6 +34,9 @@ flowchart LR
 
 ## Features
 
+- **Cited sources**: every claim links to its source with an inline `[n]` citation, and the report
+  ends with a References list. URLs come from the search results recorded in code, never from the
+  model, so they can't be made up; invalid citations are removed automatically
 - **Input guardrail** that runs before the planner, so rejected queries cost one small model call
 - **Parallel searches** with `asyncio.gather`; a failed search is skipped instead of failing the whole run
 - **Structured outputs** (Pydantic) between agents
@@ -96,6 +99,14 @@ python app.py
 
 Then open the local URL Gradio prints (usually http://127.0.0.1:7860).
 
+### Running tests
+
+The tests run fully offline with a fake model and a fake search client, so no API keys are needed:
+
+```bash
+uv run pytest
+```
+
 ## Deploying to Hugging Face Spaces
 
 The frontmatter at the top of this README configures a Gradio Space. Create a Space from this
@@ -111,7 +122,9 @@ research_manager.py  Pipeline orchestration
 guardrails.py        Input guardrail (Query Checker agent)
 planner_agent.py     Search planning
 search_agent.py      Tavily web search tool + summariser
+sources.py           Source registry and citation handling
 writer_agent.py      Report writer
 email_agent.py       Email formatting agent
 messenger.py         SMTP helper
+tests/               Offline unit and pipeline tests
 ```
